@@ -1,0 +1,105 @@
+name: AI タスク
+description: Codex または Claude にスコープを絞った作業を依頼する
+title: "[AI] "
+labels: ["ai"]
+body:
+  - type: dropdown
+    id: agent
+    attributes:
+      label: 依頼先エージェント
+      description: どのエージェントに任せる？
+      options:
+        - Codex - 通常の実装
+        - Claude - 調査・レビュー
+        - ローカル限定 - 手元の環境が必要
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: リスクレベル
+      options:
+        - Low - docs / 小さな UI / 単純なバグ
+        - Medium - テスト付きのコード変更
+        - High - 認証 / 決済 / DB / セキュリティ / デプロイ
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: ゴール
+      description: 何を達成したい？
+      placeholder: "例: 設定ページのレイアウトが崩れているのを直す"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_behavior
+    attributes:
+      label: 現状の挙動
+      description: 今はどうなっている？
+    validations:
+      required: false
+
+  - type: textarea
+    id: desired_behavior
+    attributes:
+      label: 理想の挙動
+      description: どうなってほしい？
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 受け入れ条件
+      description: どうなったら完了と判断する？ チェックリストで具体的に。
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 制約 / やってほしくないこと
+      description: エージェントに守ってほしいルール
+      value: |
+        - 変更は最小限にする
+        - 関係ないファイルは触らない
+        - PR を merge しない
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_command
+    attributes:
+      label: テストコマンド
+      description: エージェントに実行してほしいテスト
+      placeholder: "npm test"
+    validations:
+      required: false
+
+  - type: textarea
+    id: agent_instruction
+    attributes:
+      label: エージェント向け指示文
+      description: Codex に貼り付ける、または `@claude` コメントの本文として使う定型文。
+      value: |
+        Codex 向け:
+        この Issue を実装して Pull Request を作ってください。
+        AGENTS.md のルールに従ってください。
+        変更は最小限に、PR 本文に Summary / 変更ファイル / 実行したテスト / 既知の制限 を含めてください。
+        merge はしないでください。
+
+        Claude 向け (PR コメントから呼ぶ場合):
+        @claude
+        この Issue または関連 PR をレビュー / 調査してください。
+        CLAUDE.md のルールに従ってください。
+        merge はしないでください。
+    validations:
+      required: true
