@@ -15,6 +15,12 @@
 set -euo pipefail
 
 BASE="https://raw.githubusercontent.com/Nelur/ai-agent-starter/main"
+FILES=(
+  "AGENTS.md"
+  "CLAUDE.md"
+  ".github/ISSUE_TEMPLATE/ai-task.yml"
+  ".github/workflows/claude.yml"
+)
 
 green() { printf "\033[32m%s\033[0m\n" "$*"; }
 yellow() { printf "\033[33m%s\033[0m\n" "$*"; }
@@ -27,35 +33,51 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
-info "── ai-agent-starter installer ──"
+# repo root に強制移動 (monorepo の sub-dir で実行された時の事故防止)
+cd "$(git rev-parse --show-toplevel)"
+
+info "── ai-agent-starter installer (cwd: $(pwd)) ──"
+
+# 一旦すべて tmp に落として、揃ったら配置 (atomic 化、ネットワーク途中切れ対策)
+STAGE=$(mktemp -d)
+trap 'rm -rf "$STAGE"' EXIT
+
+mkdir -p "$STAGE/.github/ISSUE_TEMPLATE" "$STAGE/.github/workflows"
+
+for rel in "${FILES[@]}"; do
+  curl -fsSL "$BASE/$rel" -o "$STAGE/$rel"
+done
 
 mkdir -p .github/ISSUE_TEMPLATE .github/workflows
 
-# fetch helper: 既存ファイルがあればスキップ、無ければ取得
-fetch_if_absent() {
+place_if_absent() {
   local rel_path="$1"
   if [ -e "$rel_path" ]; then
-    yellow "⚠️  $rel_path は既に存在します。スキップ (差分を確認して必要なら手動 merge してください)"
+    yellow "⚠️  $rel_path は既に存在します。スキップ"
     return 0
   fi
-  curl -fsSL "$BASE/$rel_path" -o "$rel_path"
+  cp "$STAGE/$rel_path" "$rel_path"
   green "✅ $rel_path を配置しました"
 }
 
-fetch_if_absent "AGENTS.md"
-fetch_if_absent ".github/ISSUE_TEMPLATE/ai-task.yml"
-fetch_if_absent ".github/workflows/claude.yml"
+place_if_absent "AGENTS.md"
+place_if_absent ".github/ISSUE_TEMPLATE/ai-task.yml"
+place_if_absent ".github/workflows/claude.yml"
 
-# CLAUDE.md は既存があれば snippet を別ファイルで提案
+# CLAUDE.md: 既存があれば末尾に「## AI エージェントとしての役割」セクションを自動追記
 if [ -e CLAUDE.md ]; then
-  yellow "⚠️  CLAUDE.md は既に存在します。"
-  curl -fsSL "$BASE/CLAUDE.md" -o .CLAUDE.md.ai-agent-snippet
-  yellow "    .CLAUDE.md.ai-agent-snippet として agent 役割テンプレを配置しました。"
-  yellow "    既存 CLAUDE.md の末尾に「## AI エージェントとしての役割」セクションを"
-  yellow "    手動で追記してから .CLAUDE.md.ai-agent-snippet を削除してください。"
+  if grep -q "^## AI エージェントとしての役割" CLAUDE.md; then
+    yellow "⚠️  CLAUDE.md には既に AI エージェント役割セクションがあります。スキップ"
+  else
+    {
+      printf "\n---\n\n"
+      awk '/^## AI エージェントとしての役割/{flag=1} flag' "$STAGE/CLAUDE.md"
+    } >> CLAUDE.md
+    green "✅ CLAUDE.md の末尾に AI エージェント役割セクションを追記しました"
+  fi
 else
-  curl -fsSL "$BASE/CLAUDE.md" -o CLAUDE.md
-  green "✅ CLAUDE.md を配置しました"
+  cp "$STAGE/CLAUDE.md" CLAUDE.md
+  green "✅ CLAUDE.md (新規) を配置しました"
 fi
 
 echo ""

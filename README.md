@@ -30,7 +30,21 @@ gh repo create my-new-project --template Nelur/ai-agent-starter --private --clon
 curl -fsSL https://raw.githubusercontent.com/Nelur/ai-agent-starter/main/bin/install.sh | bash
 ```
 
-既存ファイル (CLAUDE.md など) があれば上書きせず警告のみ。手動 merge する想定。
+install.sh は内部で `cd $(git rev-parse --show-toplevel)` するので、repo 内のサブディレクトリで実行しても安全。既存 `AGENTS.md` / Issue テンプレ / workflow があれば上書きせず警告のみ。既存 `CLAUDE.md` は末尾に「AI エージェントとしての役割」セクションを自動追記する (見出し重複ガード付き)。
+
+中身を先に確認したい時:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Nelur/ai-agent-starter/main/bin/install.sh -o /tmp/install.sh
+less /tmp/install.sh
+bash /tmp/install.sh
+```
+
+特定の commit に固定したい時 (`<sha>` を任意のコミット SHA に):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Nelur/ai-agent-starter/<sha>/bin/install.sh | bash
+```
 
 ## セットアップ後にやること
 
